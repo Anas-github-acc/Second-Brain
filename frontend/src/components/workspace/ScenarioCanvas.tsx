@@ -11,7 +11,7 @@ import {
   addEdge,
   Connection,
   Node,
-  NodeDragHandler,
+  OnNodeDrag,
 } from '@xyflow/react';
 import { useSessionStore } from '@/store/sessionStore';
 import { scenarioGraphToFlow } from '@/lib/graphTransform';
@@ -104,7 +104,7 @@ export default function ScenarioCanvas() {
    * This is the key handler: it writes nodePositions[id] = {x, y}
    * so the next time initialNodes is recomputed the position is preserved.
    */
-  const onNodeDragStop: NodeDragHandler = useCallback(
+  const onNodeDragStop: OnNodeDrag = useCallback(
     (_event, node) => {
       updateNodePosition(node.id, node.position);
     },
