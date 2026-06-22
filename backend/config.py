@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_TITLE: str = "AI Career Path Scenario Simulator"
     APP_VERSION: str = "2.0.0"
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,https://second-brain-a3.vercel.app"
 
     # ── HTTP headers for OpenRouter ───────────────────────────────────────────
     HTTP_REFERER: str = "http://localhost:3000"
