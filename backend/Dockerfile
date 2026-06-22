@@ -39,8 +39,12 @@ RUN groupadd -g 10001 appgroup && \
 WORKDIR /app
 
 COPY --from=builder --chown=appuser:appgroup /opt/venv /opt/venv
-
 COPY --chown=appuser:appgroup . .
+
+# RUN mkdir -p /app/.gunicorn && \
+#     chown -R appuser:appgroup /app/.gunicorn
+
+ENV GUNICORN_CMD_ARGS="--worker-tmp-dir=/tmp"
 
 USER appuser
 
