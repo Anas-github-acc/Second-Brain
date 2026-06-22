@@ -43,8 +43,8 @@ app = FastAPI(
     title=settings.APP_TITLE,
     version=settings.APP_VERSION,
     description=(
-        "AI-powered career & life path scenario simulator. "
-        "Three-pass LLM pipeline: Discovery → Scenario Graph → What-if Expansion."
+        "Second Brain - an AI-powered career & life path decision simulator."
+        "Convert career decision to graph nodes"
     ),
     lifespan=lifespan,
     docs_url="/docs",
