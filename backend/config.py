@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = (
         "postgresql+asyncpg://postgres:password@localhost:5432/decision_simulator"
     )
+    REDIS_URL: str = "redis://localhost:6379"
+
 
 
     # ── OpenRouter ────────────────────────────────────────────────────────────

@@ -26,16 +26,45 @@ logger = logging.getLogger(__name__)
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
+import sys
+import subprocess
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Create DB tables on startup; close HTTP client on shutdown."""
     logger.info("Starting up – creating tables…")
     await create_tables()
     logger.info("Database tables ready.")
+
+    # Start background RQ worker inside the same container/dyno
+    worker_process = None
+    try:
+        logger.info("Launching background RQ worker process...")
+        worker_process = subprocess.Popen(
+            [sys.executable, "-c", "from rq.cli import main; main()", "worker", "--url", settings.REDIS_URL, "default"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.info("Background RQ worker launched with PID %d", worker_process.pid)
+    except Exception:
+        logger.exception("Failed to start background RQ worker process")
+
     yield
+
+    if worker_process:
+        logger.info("Shutting down background RQ worker...")
+        worker_process.terminate()
+        try:
+            worker_process.wait(timeout=5)
+            logger.info("Background RQ worker stopped.")
+        except subprocess.TimeoutExpired:
+            logger.warning("Background RQ worker failed to stop in 5s. Killing...")
+            worker_process.kill()
+
     logger.info("Shutting down – closing HTTP client…")
     await close_http_client()
     logger.info("Shutdown complete.")
+
 
 
 # ─── Application ──────────────────────────────────────────────────────────────

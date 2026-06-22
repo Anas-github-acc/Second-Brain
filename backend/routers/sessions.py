@@ -1,11 +1,6 @@
-"""
-routers/sessions.py – Session management endpoints.
-"""
-from __future__ import annotations
-
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +14,7 @@ from models.schemas import (
     UnifiedSession,
     JobAcceptedResponse,
 )
-from services.job_store import create_job
-from services.background_tasks import run_pass1_bg, run_pass2_bg
+from services.tasks import get_queue, run_pass1_task, run_pass2_task
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +47,10 @@ async def _get_session_or_404(session_id: str, db: AsyncSession) -> DecisionSess
 )
 async def create_session(
     body: CreateSessionRequest,
-    background_tasks: BackgroundTasks,
 ) -> JobAcceptedResponse:
-    job_id = create_job("pass1")
-    background_tasks.add_task(run_pass1_bg, job_id, body)
-    return JobAcceptedResponse(job_id=job_id, status="pending")
+    queue = get_queue()
+    job = queue.enqueue(run_pass1_task, body.model_dump(), result_ttl=3600)
+    return JobAcceptedResponse(job_id=job.get_id(), status="pending")
 
 
 @router.post(
@@ -70,14 +63,14 @@ async def create_session(
 async def submit_answers_and_generate(
     session_id: str,
     body: SubmitAnswersRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> JobAcceptedResponse:
     await _get_session_or_404(session_id, db)
 
-    job_id = create_job("pass2", session_id=session_id)
-    background_tasks.add_task(run_pass2_bg, job_id, session_id, body.responses)
-    return JobAcceptedResponse(job_id=job_id, status="pending")
+    queue = get_queue()
+    job = queue.enqueue(run_pass2_task, session_id, body.responses, result_ttl=3600)
+    return JobAcceptedResponse(job_id=job.get_id(), status="pending")
+
 
 
 

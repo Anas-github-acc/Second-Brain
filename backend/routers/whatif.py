@@ -1,14 +1,13 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models.db_models import DecisionSession
 from models.schemas import WhatIfRequest, JobAcceptedResponse
-from services.job_store import create_job
-from services.background_tasks import run_whatif_bg
+from services.tasks import get_queue, run_whatif_task
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,6 @@ async def _get_session_or_404(session_id: str, db: AsyncSession) -> DecisionSess
 async def expand_what_if(
     session_id: str,
     body: WhatIfRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> JobAcceptedResponse:
     session = await _get_session_or_404(session_id, db)
@@ -53,11 +51,12 @@ async def expand_what_if(
             detail=f"Node ID {body.target_node_id} not found in scenario graph.",
         )
 
-    job_id = create_job("whatif", session_id=session_id)
-    background_tasks.add_task(
-        run_whatif_bg, job_id, session_id, body.target_node_id, body.what_if_query
+    queue = get_queue()
+    job = queue.enqueue(
+        run_whatif_task, session_id, body.target_node_id, body.what_if_query, result_ttl=3600
     )
 
-    return JobAcceptedResponse(job_id=job_id, status="pending")
+    return JobAcceptedResponse(job_id=job.get_id(), status="pending")
+
 
 
