@@ -12,8 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import create_tables
-from routers import sessions, whatif
+from routers import sessions, whatif, jobs
 from services.llm_service import close_http_client
+
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -71,6 +72,8 @@ app.add_middleware(
 
 app.include_router(sessions.router)
 app.include_router(whatif.router)
+app.include_router(jobs.router)
+
 
 
 # ─── Health check ─────────────────────────────────────────────────────────────

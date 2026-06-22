@@ -18,6 +18,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://postgres:password@localhost:5432/decision_simulator"
     )
 
+
     # ── OpenRouter ────────────────────────────────────────────────────────────
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"

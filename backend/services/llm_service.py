@@ -136,7 +136,7 @@ _http_client: httpx.AsyncClient | None = None
 def get_http_client() -> httpx.AsyncClient:
     global _http_client
     if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.AsyncClient(timeout=180.0)
+        _http_client = httpx.AsyncClient(timeout=600.0)
     return _http_client
 
 
@@ -170,6 +170,7 @@ async def _call_model(
         f"{settings.OPENROUTER_BASE_URL}/chat/completions",
         headers=headers,
         json=payload,
+        timeout=600.0,
     )
     response.raise_for_status()
     data = response.json()

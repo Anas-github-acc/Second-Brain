@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,10 +17,10 @@ from models.schemas import (
     GraphResponse,
     SubmitAnswersRequest,
     UnifiedSession,
+    JobAcceptedResponse,
 )
-from services.pass1_discovery import run_pass1
-from services.pass2_scenario_graph import run_pass2
-from services.state_store import apply_responses, state_from_dict
+from services.job_store import create_job
+from services.background_tasks import run_pass1_bg, run_pass2_bg
 
 logger = logging.getLogger(__name__)
 
@@ -46,53 +46,40 @@ async def _get_session_or_404(session_id: str, db: AsyncSession) -> DecisionSess
 
 @router.post(
     "/create",
-    response_model=DiscoveryResponse,
-    status_code=status.HTTP_201_CREATED,
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Pass 1 – Discovery Engine",
-    description="Submit a user prompt. Returns discovery state with questions to ask.",
+    description="Submit a user prompt. Enqueues a discovery task. Returns 202 with job_id.",
 )
 async def create_session(
     body: CreateSessionRequest,
-    db: AsyncSession = Depends(get_db),
-) -> DiscoveryResponse:
-    try:
-        _session_id, response = await run_pass1(db, body)
-        return response
-    except RuntimeError as exc:
-        logger.exception("Pass 1 LLM failure")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"LLM service unavailable: {exc}",
-        ) from exc
+    background_tasks: BackgroundTasks,
+) -> JobAcceptedResponse:
+    job_id = create_job("pass1")
+    background_tasks.add_task(run_pass1_bg, job_id, body)
+    return JobAcceptedResponse(job_id=job_id, status="pending")
 
 
 @router.post(
     "/{session_id}/answers",
-    response_model=GraphResponse,
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Submit answers + trigger Pass 2 Graph Generation",
-    description="Submit all user question answers. Triggers Pass 2 to generate the scenario graph.",
+    description="Submit all user question answers. Enqueues task to generate scenario graph.",
 )
 async def submit_answers_and_generate(
     session_id: str,
     body: SubmitAnswersRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-) -> GraphResponse:
-    session = await _get_session_or_404(session_id, db)
+) -> JobAcceptedResponse:
+    await _get_session_or_404(session_id, db)
 
-    # Merge answers into state
-    new_state = apply_responses(session.current_state, body.responses)
-    session.current_state = new_state
-    await db.flush()
+    job_id = create_job("pass2", session_id=session_id)
+    background_tasks.add_task(run_pass2_bg, job_id, session_id, body.responses)
+    return JobAcceptedResponse(job_id=job_id, status="pending")
 
-    # Run Pass 2
-    try:
-        return await run_pass2(db, session)
-    except RuntimeError as exc:
-        logger.exception("Pass 2 LLM failure for session %s", session_id)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Scenario graph LLM service unavailable: {exc}",
-        ) from exc
+
 
 
 @router.get(

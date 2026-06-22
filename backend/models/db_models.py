@@ -59,3 +59,4 @@ class DecisionSession(Base):
     )
 
     user: Mapped[User] = relationship("User", back_populates="sessions")
+

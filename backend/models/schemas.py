@@ -131,3 +131,17 @@ class WhatIfResponse(BaseModel):
     session_id: str
     target_node_id: str
     scenario_graph: ScenarioGraph  # full updated graph
+
+
+class JobAcceptedResponse(BaseModel):
+    job_id: str
+    status: str = "pending"
+
+
+class JobStatusResponse(BaseModel):
+    id: str
+    status: str
+    session_id: Optional[str] = None
+    result: Optional[Any] = None
+    error: Optional[str] = None
+
