@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0a0a0f;
+  --bg: #000000;
   --surface: #111118;
   --card: rgba(255, 255, 255, 0.04);
   --border: rgba(255, 255, 255, 0.08);
@@ -31,7 +31,7 @@ html {
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'Inter', sans-serif;
+  font-family: "Google Sans", "Google Sans Display", sans-serif;
   overflow-x: hidden;
 }
 
@@ -78,6 +78,66 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Dot-grid background gradient animation */
+@keyframes dotGradientDrift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 60% 60%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* Animated white/off-white border for chatbox */
+@keyframes whiteBorderShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* CSS-native spinning angle for conic-gradient border */
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes borderSpin {
+  to { --border-angle: 360deg; }
+}
+
+.dot-bg {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.dot-bg-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(240,240,255,0.02) 30%,
+    rgba(255,255,255,0.05) 60%,
+    rgba(230,230,250,0.02) 100%
+  );
+  background-size: 400% 400%;
+  animation: dotGradientDrift 10s ease infinite;
+}
+
+.chatbox-border-wrap {
+  /* Spinning conic-gradient: bright white highlight travels around the border */
+  background: conic-gradient(
+    from var(--border-angle),
+    rgba(255, 255, 255, 0.06)  0deg,
+    rgba(255, 255, 255, 0.06) 30deg,
+    rgba(255, 255, 255, 0.70) 70deg,
+    rgba(255, 255, 255, 1.00) 90deg,
+    rgba(255, 255, 255, 0.70) 110deg,
+    rgba(255, 255, 255, 0.06) 160deg,
+    rgba(255, 255, 255, 0.06) 260deg,
+    rgba(255, 255, 255, 0.28) 305deg,
+    rgba(255, 255, 255, 0.06) 345deg,
+    rgba(255, 255, 255, 0.06) 360deg
+  );
+  animation: borderSpin 3s linear infinite;
 }
 
 .gradient-text {

@@ -7,6 +7,9 @@ import {
   ScenarioGraphNode,
 } from '@/types';
 
+/** x/y overrides written by manual node drags. Keyed by node id. */
+export type NodePositionMap = Record<string, { x: number; y: number }>;
+
 interface SessionStore {
   // Session state
   session: UnifiedSession | null;
@@ -23,6 +26,8 @@ interface SessionStore {
   scenarioGraph: ScenarioGraph | null;
   selectedNode: ScenarioGraphNode | null;
   expandedNodeIds: Set<string>;
+  /** Manual drag overrides — never reset by graph refreshes */
+  nodePositions: NodePositionMap;
 
   // Actions
   setSession: (session: UnifiedSession) => void;
@@ -35,6 +40,7 @@ interface SessionStore {
   setScenarioGraph: (graph: ScenarioGraph) => void;
   setSelectedNode: (node: ScenarioGraphNode | null) => void;
   toggleNodeExpanded: (nodeId: string) => void;
+  updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void;
   reset: () => void;
 }
 
@@ -49,6 +55,7 @@ const initialState = {
   scenarioGraph: null,
   selectedNode: null,
   expandedNodeIds: new Set<string>(),
+  nodePositions: {},
 };
 
 export const useSessionStore = create<SessionStore>((set) => ({
@@ -99,5 +106,10 @@ export const useSessionStore = create<SessionStore>((set) => ({
       return { expandedNodeIds: next };
     }),
 
-  reset: () => set({ ...initialState, expandedNodeIds: new Set<string>() }),
+  updateNodePosition: (nodeId, position) =>
+    set((state) => ({
+      nodePositions: { ...state.nodePositions, [nodeId]: position },
+    })),
+
+  reset: () => set({ ...initialState, expandedNodeIds: new Set<string>(), nodePositions: {} }),
 }));

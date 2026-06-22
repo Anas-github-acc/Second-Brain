@@ -11,6 +11,7 @@ import {
   addEdge,
   Connection,
   Node,
+  NodeDragHandler,
 } from '@xyflow/react';
 import { useSessionStore } from '@/store/sessionStore';
 import { scenarioGraphToFlow } from '@/lib/graphTransform';
@@ -27,32 +28,49 @@ const nodeTypes = {
 };
 
 export default function ScenarioCanvas() {
-  const scenarioGraph = useSessionStore((s) => s.scenarioGraph);
-  const expandedNodeIds = useSessionStore((s) => s.expandedNodeIds);
-  const setSelectedNode = useSessionStore((s) => s.setSelectedNode);
-  const selectedNode = useSessionStore((s) => s.selectedNode);
-  const isLoading = useSessionStore((s) => s.isLoading);
-  const session = useSessionStore((s) => s.session);
+  const scenarioGraph    = useSessionStore((s) => s.scenarioGraph);
+  const expandedNodeIds  = useSessionStore((s) => s.expandedNodeIds);
+  const setSelectedNode  = useSessionStore((s) => s.setSelectedNode);
+  const selectedNode     = useSessionStore((s) => s.selectedNode);
+  const isLoading        = useSessionStore((s) => s.isLoading);
+  const session          = useSessionStore((s) => s.session);
+  // Manual drag overrides keyed by node id
+  const nodePositions    = useSessionStore((s) => s.nodePositions);
+  const updateNodePosition = useSessionStore((s) => s.updateNodePosition);
 
+  /**
+   * Build the base ReactFlow nodes from the graph,
+   * then overlay any positions the user has manually dragged.
+   */
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     if (!scenarioGraph || scenarioGraph.node_count === 0) {
       return { nodes: [], edges: [] };
     }
+
     const flow = scenarioGraphToFlow(scenarioGraph, expandedNodeIds);
-    if (selectedNode) {
-      flow.nodes = flow.nodes.map((n) => {
-        if (n.id === String(selectedNode.id)) {
-          return { ...n, zIndex: 1000 };
-        }
-        return { ...n, zIndex: 0 };
-      });
-    }
+
+    flow.nodes = flow.nodes.map((n) => {
+      // Apply stored manual position if present — this survives graph re-renders
+      const savedPos = nodePositions[n.id];
+      const position = savedPos ?? n.position;
+
+      // Bring the selected node to front
+      const zIndex = selectedNode && n.id === String(selectedNode.id) ? 1000 : 0;
+
+      return { ...n, position, zIndex };
+    });
+
     return flow;
-  }, [scenarioGraph, expandedNodeIds, selectedNode]);
+  }, [scenarioGraph, expandedNodeIds, selectedNode, nodePositions]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  /**
+   * Sync ReactFlow node list whenever the graph data changes,
+   * but do NOT overwrite positions for nodes that already have
+   * a stored manual override (those come through initialNodes above).
+   */
   useEffect(() => {
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
@@ -68,25 +86,32 @@ export default function ScenarioCanvas() {
 
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      // Find the corresponding ScenarioGraphNode
       const graphNode = scenarioGraph?.nodes.find((n) => String(n.id) === node.id);
-      if (graphNode) {
-        setSelectedNode(graphNode);
-      }
-      // Instantly bring the clicked node to front
+      if (graphNode) setSelectedNode(graphNode);
+
       setNodes((nds) =>
-        nds.map((n) => {
-          if (n.id === node.id) {
-            return { ...n, zIndex: 1000 };
-          }
-          return { ...n, zIndex: 0 };
-        })
+        nds.map((n) => ({
+          ...n,
+          zIndex: n.id === node.id ? 1000 : 0,
+        }))
       );
     },
     [scenarioGraph, setSelectedNode, setNodes]
   );
 
-  // Empty state
+  /**
+   * Persist the new position into the store after a drag ends.
+   * This is the key handler: it writes nodePositions[id] = {x, y}
+   * so the next time initialNodes is recomputed the position is preserved.
+   */
+  const onNodeDragStop: NodeDragHandler = useCallback(
+    (_event, node) => {
+      updateNodePosition(node.id, node.position);
+    },
+    [updateNodePosition]
+  );
+
+  // ── Empty / loading state ──────────────────────────────────────────────────
   if (!scenarioGraph || scenarioGraph.node_count === 0) {
     return (
       <div
@@ -158,6 +183,7 @@ export default function ScenarioCanvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
