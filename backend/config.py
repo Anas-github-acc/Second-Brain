@@ -46,7 +46,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
+        origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        defaults = ["http://localhost:3000", "https://second-brain-a3.vercel.app"]
+        for d in defaults:
+            if d not in origins and "*" not in origins:
+                origins.append(d)
+        return origins
 
 
 settings = Settings()
