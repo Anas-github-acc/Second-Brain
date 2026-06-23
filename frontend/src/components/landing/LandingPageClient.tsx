@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Hero from '@/components/landing/Hero';
 import DecisionInput from '@/components/landing/DecisionInput';
+import PacmanOverlay from '@/components/landing/PacmanOverlay';
 
 /**
  * Layout:
@@ -101,6 +102,8 @@ export default function LandingPageClient() {
       >
         <DecisionInput />
       </div>
+
+      <PacmanOverlay />
 
     </div>
   );

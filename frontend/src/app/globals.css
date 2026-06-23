@@ -238,3 +238,100 @@ em {
   color: var(--secondary);
   font-style: italic;
 }
+
+/* Pacman overlay morphing transition styles */
+.pacman-overlay-container {
+  position: fixed;
+  z-index: 999;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Initial Closed State default */
+  top: 24px;
+  left: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px; /* 22px is exactly half of 44px, making it a perfect circle */
+  background: #ffffff;
+  transform: translate(0, 0);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.08);
+  border: 1px solid transparent;
+
+  /* Snappy transition for hover scale/active clicks when closed */
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* When opening or closing, use the long uniform 0.95s cubic-bezier morphing transition */
+.pacman-overlay-container.open,
+.pacman-overlay-container.closing {
+  transition:
+    top 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    left 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.95s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pacman-overlay-container.open {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85vw;
+  height: 47.81vw; /* 16:9 aspect ratio */
+  max-width: 1200px;
+  max-height: 675px;
+  border-radius: 22px; /* Unchanged border radius from the closed circle state */
+  background: #ffffff; /* White background again */
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
+
+/* Hover/active states only when not open/closing */
+.pacman-overlay-container:not(.open):not(.closing):hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+}
+
+.pacman-overlay-container:not(.open):not(.closing):active {
+  transform: scale(0.95);
+}
+
+.editor-content-wrapper {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.4s;
+  display: flex;
+  flex-direction: column;
+}
+
+.pacman-overlay-container.open .editor-content-wrapper {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Backdrop styling */
+.editor-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent; /* Transparent background */
+  backdrop-filter: blur(12px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editor-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
