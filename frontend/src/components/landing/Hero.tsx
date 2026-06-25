@@ -132,7 +132,7 @@ export default function Hero() {
         position: 'relative',
         zIndex: 1,
       }}>
-        career choice to nodes
+        explore before chose
       </h2>
 
       {/* Sub-line */}
@@ -146,8 +146,7 @@ export default function Hero() {
         marginTop: 28,
         letterSpacing: '0.01em',
       }}>
-        Compare your major life or career path via interactive graph and explore
-        possible outcomes as nodes and query what-if
+        Explore your career before your blindly chose your career. We built interactive nodes connected like a graph where you compare major life path and query what-if
       </p>
     </div>
   );

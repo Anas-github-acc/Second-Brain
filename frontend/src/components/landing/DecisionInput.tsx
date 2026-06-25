@@ -74,11 +74,11 @@ export default function DecisionInput() {
 
           <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
             <span style={{
-              fontSize: '0.74rem',
+              fontSize: '1rem',
               color: 'rgba(255,255,255,0.20)',
               fontFamily: '"Google Sans", sans-serif',
             }}>
-              ⌘ + Enter to analyze
+              CTRL + ENTER to analyze
             </span>
             <button
               id="analyze-btn"
